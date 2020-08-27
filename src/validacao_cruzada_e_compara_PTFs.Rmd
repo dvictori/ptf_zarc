@@ -1,0 +1,342 @@
+---
+title: "Validação cruzada da PTF criada e comparação com outras da literatura"
+author: "Daniel Victoria (CNPTIA), Wenceslau Teixeira (CNPS), Alexandre Hugo (CNPS - UEP)"
+date: "9/12/2020"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(Ternary)
+source('../src/outras_PTFs.R')
+```
+
+## Avaliação dos modelos para PTF de Água disponível por Validação Cruzada
+
+Para verificar se o modelo gerado para a PTF está adequado, foram feitas validações cruzadas, a fim de identificar se os parâmetros de ajuste, principalmente o RMSE, se mantém entre oas iterações da validação e o modelo completo, gerado a partir de todo o conjunto de dados. Também são feitas comparações dos resultados com outras PTFs publicadas na literatura
+
+
+```{r}
+dados <- read.csv2("../dados/bd_zarc.csv")
+dados$AD <- dados$AD * 10
+```
+
+O modelo final gerado para o ZARC utiliza a transformação Box-Cox e utiliza as frações *areia total*, *silte* e *argila* para estimar a *água disponível*. Para tal é utilizado um modelo linear multivariado.
+
+A avaliação dos resultados será conduzida a partir da validação cruzada dividindo as `r nrow(dados)` observações da base de dados em 20 subconjuntos.
+
+## Modelo com transformação Box-Cox
+
+Usando a transformação Box-Cox para melhorar a distribuição dos resíduos. Usando uma mesma transformação para todas as iterações da validação cruzada.
+
+```{r}
+#### Transformação Box - Cox ####
+# Transformaçao dos dados  (normalidade, homocedasticidade e aditividade) - BOX-COX
+# Determinação do fator lambda
+bc <- boxcox(AD ~ -1 + dados$AT + dados$SIL + dados$ARG +
+                  I(AT*SIL) + I(AT*ARG) + I(SIL*ARG) +
+                  I(AT*SIL*ARG), data = dados, lambda=(2000:5000)/10000)
+
+lambda <- bc$x[which(bc$y==max(bc$y))]
+# Transformando os dados utilizando o lambda - ADt
+ADt <- (dados$AD^lambda-1) / lambda
+
+grupo <- rep(1:20, length.out = nrow(dados))
+
+ajuste <- data.frame(rodada = numeric(),
+                     r2 = numeric(),
+                     r2_ad = numeric(),
+                     rmse = numeric())
+
+AD_independente <- rep(-99, nrow(dados))
+
+for (i in 1:20) {
+  valid <- dados[grupo == i,]
+  ADt_valid <- ADt[grupo == i]
+  calib <- dados[grupo != i,]
+  ADt_calib <- ADt[grupo != i]
+  
+  m2 <- lm(ADt_calib ~ -1 + AT + SIL + ARG +
+             I(AT*SIL) + I(AT*ARG) + I(SIL*ARG) + I(AT*SIL*ARG), data=calib)
+  
+  valid$AD_ptf_bc <- predict(m2, newdata = valid)
+  valid$AD_ptf <- (lambda * valid$AD_ptf_bc + 1) ^(1 / lambda)
+  
+  AD_independente[grupo == i] <- valid$AD_ptf
+  
+  valid_lm <- lm(AD ~ AD_ptf, data = valid)
+  ajuste <- rbind(ajuste, 
+                  data.frame(rodada = i,
+                             r2 = summary(valid_lm)$r.squared,
+                             r2_ad = summary(valid_lm)$adj.r.squared,
+                             rmse = sqrt(mean((valid$AD - valid$AD_ptf)^2))
+                  )
+  )
+  
+}
+#ajuste
+```
+
+O RSE da validação cruzada não deve ser levado em consideração pois é calculado em cima dos dados transformados. 
+
+O RMSE médio das 100 iterações é: `r mean(ajuste$rmse)`
+O RMSE das estimativas independentes é: `r sqrt(mean((dados$AD - AD_independente)^2))`
+
+Agora o modelo com todos os dados
+
+```{r}
+m2 <- lm(ADt ~ -1 + AT + SIL + ARG +
+           I(AT*SIL) + I(AT*ARG) + I(SIL*ARG) + I(AT*SIL*ARG), data=dados)
+
+fit.m2_destrans <- (lambda * fitted(m2) + 1) ^(1 / lambda)
+RMSEm2 <- sqrt(mean((dados$AD - fit.m2_destrans)^2))
+```
+
+O RMSE do modelo completo é: `r RMSEm2`  
+A diferença entre eles é: `r RMSEm2 - mean(ajuste$rmse)`
+
+A **diferença entre o RMSE do modelo completo e das iterações é mínima**. Ou seja, o bom ajuste obtido nas validações cruzadas permanece quando usamos os dados completos.
+
+## Aplicando outras PTFs aos dados
+
+Importante ressaltar que comparação para a equação do ZARC é feita em cima dos resultados da validação cruzada. Além disso, as amostras foram selecionadas de acordo com as faixas de valores de areia, silte e argila utilizadas para o desenvolvimento das respectivas PTFs, a saber:
+
+* Assad
+  * Areia: 2 a 92 %
+  * Silte: 0 a 56 %
+  * Argila: 5 a 86 %
+* Giarola
+  * Areia: 3 a 78 %
+  * Silte: 10 a 42 %
+  * Argila: 6 a 81 %
+* van den Berg
+  * Argila: 2 a 95 %
+
+```{r}
+
+rmse <- function(obs, pred) {
+  return(sqrt(mean((obs - pred)^2)))
+}
+
+validos <- dados$AT >= 3 & dados$AT <= 78 &
+  dados$SIL >= 10 & dados$SIL <= 42 &
+  dados$ARG >= 6 & dados$ARG <= 81
+
+dados_filtrados <- dados[validos,]
+
+AD_independente_filtrado <- AD_independente[validos]
+
+ptfs <- data.frame(
+  ad = dados_filtrados$AD,
+  zarc = AD_independente_filtrado,
+  assad = ptf_assad(dados_filtrados$AT) / 10,
+  giarola = ptf_giarola(dados_filtrados$SIL, dados_filtrados$ARG) * 10,
+  van_den_berg = ptf_van_den_berg(dados_filtrados$ARG) / 10,
+  zarc_orig = ptf_ZARC_orig(dados_filtrados$AT, dados_filtrados$ARG)
+)
+```
+
+A PTF criada nesse estudo apresenta um RMSE = `r round(rmse(ptfs$ad, ptfs$zarc),3)` e r² = `r round(cor(ptfs$ad, ptfs$zarc)^2, 3)`.
+
+```{r}
+plot(ptfs$ad, ptfs$zarc,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF Zarc',
+      sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$zarc), 3),
+                  'R²:', round(cor(ptfs$ad, ptfs$zarc)^2, 3)))
+```
+A PTF de Assad, baseada apenas em areia total, apresenta RMSE = `r round(rmse(ptfs$ad, ptfs$assad),3)` r  e r² = `r round(cor(ptfs$ad, ptfs$assad)^2, 3)`, com um claro patamar próximo a AD de 1,22 mm cm⁻¹.
+
+```{r}
+plot(ptfs$ad, ptfs$assad,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF Assad',
+      sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$assad), 3),
+                  'R²:', round(cor(ptfs$ad, ptfs$assad)^2, 3)))
+```
+
+A PTF de Giarola, baseada apenas em silte e argila, apresenta RMSE = `r round(rmse(ptfs$ad, ptfs$giarola),3)` e r² = `r round(cor(ptfs$ad, ptfs$giarola)^2, 3)`. Das PTFs que estamos usando na comparação, essa é a única em que é preciso estimar CC e PMP separadamente e calcular AD pela diferença.
+
+```{r}
+plot(ptfs$ad, ptfs$giarola,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF Giarola',
+      sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$giarola), 3),
+                  'R²:', round(cor(ptfs$ad, ptfs$giarola)^2, 3)))
+```
+
+A PTF de van den Berg, baseada apenas argila, apresenta RMSE = `r round(rmse(ptfs$ad, ptfs$van_den_berg),3)` e r² = `r round(cor(ptfs$ad, ptfs$van_den_berg)^2, 3)`. Por ser uma regressão linear em relação a argila, apresenta distribuição dos pontos semelhante ao obtido em Giarola (que se reduz a uma regressão em relação a argila). Porém, o coeficientes da regressão de van den Berg indicam pouca variação da AD em relação à argila, como pode ser visto no gráfico abaixo.
+
+```{r}
+plot(ptfs$ad, ptfs$van_den_berg,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF van den Berg',
+      sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$van_den_berg), 3),
+                  'R²:', round(cor(ptfs$ad, ptfs$van_den_berg)^2, 3)))
+```
+A PTF original do ZARC, que utiliza 3 classes de solo, apresenta RMSE = `r round(rmse(ptfs$ad, ptfs$zarc_orig), 3)` e r² = `r round(cor(ptfs$ad, ptfs$zarc_orig)^2, 3)`. 
+
+```{r}
+plot(ptfs$ad, ptfs$zarc_orig,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF ZARC Original',
+      sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$zarc_orig), 3),
+                  'R²:', round(cor(ptfs$ad, ptfs$zarc_orig)^2, 3)))
+```
+
+## Qual a área do triang. que contém os dados?
+
+O ajuste da PTF para a base de dados mais restrita não se mostrou tão bom quanto o obtido para a base completa. Provavelmente isso ocorreu porque a base mais restrita, apesar de apresentar uma menor variação granulométrica, apresenta grande amplitude de AD. Com isso, o modelo desenvolvido não foi capaz de captar os extremos.
+
+```{r}
+paleta <- colorRampPalette(c('red',  'green', 'blue'))
+quebras_amostra <- cut(dados$AD,
+                       breaks = seq(min(dados$AD),
+                                    max(dados$AD),
+                                    len = 6),
+                       include.lowest = TRUE)
+
+cores <- paleta(6)[quebras_amostra]
+
+TernaryPlot(main = '',
+            alab = 'Argila - [%]', blab = 'Silte - [%]', clab = 'Areia Total - [%]')
+
+AddToTernary(points, dados[c('ARG', 'SIL', 'AT')],
+             cex = 0.5, pch = 19, col = cores)
+
+base_filtrada <- matrix(c(
+  06, 42, 52,
+  06, 16, 78,
+  12, 10, 78,
+  81, 10, 09,
+  81, 16, 03,
+  55, 42, 03
+), ncol = 3, byrow = TRUE)
+
+TernaryPolygon(base_filtrada, border = 'black', lty = 'dashed', lwd = 2)
+
+legend('topright',
+       title = 'AD [mm cm⁻¹]',
+       legend = levels(quebras_amostra),
+       cex=0.8, bty='n', pch=21, pt.cex=1.8,
+       pt.bg = paleta(6))
+
+# dev.copy(png, '../figs/amostras_ternario_restricoes_base.png')
+# dev.off()
+
+```
+
+
+## Verificação com base de dados externa
+
+Os colegas Eduardo Couto, Jean Marques e Joberta Yakuma gentilmente cederam dados para realizarmos a verificação da PTF criada. Dessa forma podemos fazer a avaliação com uma base de dados independentes. Os dados no formato RDS são criados no script `verifica_base_dados_externos.R`.
+
+```{r}
+dados_extra <- read.csv2('../dados/bd_independente.csv')
+dados_extra$AD <- dados_extra$AD * 10
+
+# verificando PTF Zarc
+dados_extra$zarc <- predict(m2, newdata = dados_extra)
+dados_extra$zarc <- (lambda * dados_extra$zarc + 1)^(1 / lambda)
+```
+
+A verificação independente para todo o conjunto de dados mostrou que a PTF desenvolvida apresentou RMSE = `r round(rmse(dados_extra$AD, dados_extra$zarc), 3)` e r² = `r round(cor(dados_extra$AD, dados_extra$zarc)^2, 3)`
+
+```{r}
+plot(dados_extra$AD, dados_extra$zarc,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF ZARC (verificação independente)',
+      sub = paste('RMSE:', round(rmse(dados_extra$AD, dados_extra$zarc), 3),
+                  'R²:', round(cor(dados_extra$AD, dados_extra$zarc)^2, 3)))
+```
+A comparação com outras PTFs exige que os dados utilizados sejam restringidos ao domínio das modelos. Dessa forma, o conjunto de dados para a verificação e comparação é reduzido.
+
+```{r}
+# comparando com outras PTFs.
+# Dados devem ser filtrados para o range válido
+validos <- dados_extra$AT >= 3 & dados_extra$AT <= 78 &
+  dados_extra$SIL >= 10 & dados_extra$SIL <= 42 &
+  dados_extra$ARG >= 6 & dados_extra$ARG <= 81 
+
+dados_extra_filtrado <- dados_extra[validos,]
+
+# aplicando PTFs aos dados
+dados_extra_filtrado$zarc <- predict(m2, newdata = dados_extra_filtrado)
+dados_extra_filtrado$zarc <- (lambda * dados_extra_filtrado$zarc + 1) ^(1 / lambda)
+dados_extra_filtrado$assad <- ptf_assad(dados_extra_filtrado$AT) / 10
+dados_extra_filtrado$giarola <- ptf_giarola(dados_extra_filtrado$SIL, dados_extra_filtrado$ARG) * 10
+dados_extra_filtrado$van_den_berg <- ptf_van_den_berg(dados_extra_filtrado$ARG) / 10
+dados_extra_filtrado$zarc_orig <- ptf_ZARC_orig(dados_extra_filtrado$AT, dados_extra_filtrado$ARG)
+```
+
+Quando avaliada em relação aos dados independetes, a nova PTF criada apresenta RMSE = `r round(rmse(dados_extra$AD, dados_extra$zarc), 3)` e r² = `r round(cor(dados_extra$AD, dados_extra$zarc)^2, 3)`
+
+```{r}
+plot(dados_extra_filtrado$AD, dados_extra_filtrado$zarc,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF ZARC (verificação independente)',
+      sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$zarc), 3),
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc)^2, 3)))
+```
+
+Para a PTF de Assad, os coeficientes de ajuste foram: RMSE = `r round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$assad), 3)` e r² = `r round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$assad)^2, 3)`.
+
+```{r}
+plot(dados_extra_filtrado$AD, dados_extra_filtrado$assad,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF Assad (verificação independente)',
+      sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$assad), 3),
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$assad)^2, 3)))
+```
+Para a PTF de Giarola, os coeficientes de ajuste foram: RMSE = `r round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$giarola), 3)` e r² = `r round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$giarola)^2, 3)`.
+
+```{r}
+plot(dados_extra_filtrado$AD, dados_extra_filtrado$giarola,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF Giarola (verificação independente)',
+      sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$giarola), 3),
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$giarola)^2, 3)))
+```
+
+Para a PTF de van den Berg, os coeficientes de ajuste foram: RMSE = `r round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg), 3)` e r² = `r round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg)^2, 3)`.
+
+```{r}
+plot(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF van den Berg (verificação independente)',
+      sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg), 3),
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg)^2, 3)))
+```
+
+E para a relação originalmente utilizada no ZARC, com 3 tipos de solos, temos: RMSE = `r round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig), 3)` e r² = `r round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig)^2, 3)`.
+
+```{r}
+plot(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)')
+abline(a = 0, b = 1, col = 'red')
+title(main = 'PTF Zarc Original (verificação independente)',
+      sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig), 3),
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig)^2, 3)))
+```
