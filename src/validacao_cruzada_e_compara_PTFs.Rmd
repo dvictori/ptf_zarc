@@ -91,10 +91,13 @@ m2 <- lm(ADt ~ -1 + AT + SIL + ARG +
 
 fit.m2_destrans <- (lambda * fitted(m2) + 1) ^(1 / lambda)
 RMSEm2 <- sqrt(mean((dados$AD - fit.m2_destrans)^2))
+
+#cor(dados$AD, fit.m2_destrans)
 ```
 
 O RMSE do modelo completo é: `r RMSEm2`  
 A diferença entre eles é: `r RMSEm2 - mean(ajuste$rmse)`
+A correlação entre os dados observados e o modelado é: `r cor(dados$AD, fit.m2_destrans)`
 
 A **diferença entre o RMSE do modelo completo e das iterações é mínima**. Ou seja, o bom ajuste obtido nas validações cruzadas permanece quando usamos os dados completos.
 
@@ -146,7 +149,8 @@ plot(ptfs$ad, ptfs$zarc,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF Zarc',
       sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$zarc), 3),
-                  'R²:', round(cor(ptfs$ad, ptfs$zarc)^2, 3)))
+                  'R²:', round(cor(ptfs$ad, ptfs$zarc)^2, 3),
+                  'R:', round(cor(ptfs$ad, ptfs$zarc), 3)))
 ```
 A PTF de Assad, baseada apenas em areia total, apresenta RMSE = `r round(rmse(ptfs$ad, ptfs$assad),3)` r  e r² = `r round(cor(ptfs$ad, ptfs$assad)^2, 3)`, com um claro patamar próximo a AD de 1,22 mm cm⁻¹.
 
@@ -157,7 +161,8 @@ plot(ptfs$ad, ptfs$assad,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF Assad',
       sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$assad), 3),
-                  'R²:', round(cor(ptfs$ad, ptfs$assad)^2, 3)))
+                  'R²:', round(cor(ptfs$ad, ptfs$assad)^2, 3),
+                  'R:', round(cor(ptfs$ad, ptfs$assad), 3)))
 ```
 
 A PTF de Giarola, baseada apenas em silte e argila, apresenta RMSE = `r round(rmse(ptfs$ad, ptfs$giarola),3)` e r² = `r round(cor(ptfs$ad, ptfs$giarola)^2, 3)`. Das PTFs que estamos usando na comparação, essa é a única em que é preciso estimar CC e PMP separadamente e calcular AD pela diferença.
@@ -169,7 +174,8 @@ plot(ptfs$ad, ptfs$giarola,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF Giarola',
       sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$giarola), 3),
-                  'R²:', round(cor(ptfs$ad, ptfs$giarola)^2, 3)))
+                  'R²:', round(cor(ptfs$ad, ptfs$giarola)^2, 3),
+                  'R:', round(cor(ptfs$ad, ptfs$giarola), 3)))
 ```
 
 A PTF de van den Berg, baseada apenas argila, apresenta RMSE = `r round(rmse(ptfs$ad, ptfs$van_den_berg),3)` e r² = `r round(cor(ptfs$ad, ptfs$van_den_berg)^2, 3)`. Por ser uma regressão linear em relação a argila, apresenta distribuição dos pontos semelhante ao obtido em Giarola (que se reduz a uma regressão em relação a argila). Porém, o coeficientes da regressão de van den Berg indicam pouca variação da AD em relação à argila, como pode ser visto no gráfico abaixo.
@@ -181,7 +187,8 @@ plot(ptfs$ad, ptfs$van_den_berg,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF van den Berg',
       sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$van_den_berg), 3),
-                  'R²:', round(cor(ptfs$ad, ptfs$van_den_berg)^2, 3)))
+                  'R²:', round(cor(ptfs$ad, ptfs$van_den_berg)^2, 3),
+                  'R:', round(cor(ptfs$ad, ptfs$van_den_berg), 3)))
 ```
 A PTF original do ZARC, que utiliza 3 classes de solo, apresenta RMSE = `r round(rmse(ptfs$ad, ptfs$zarc_orig), 3)` e r² = `r round(cor(ptfs$ad, ptfs$zarc_orig)^2, 3)`. 
 
@@ -192,7 +199,8 @@ plot(ptfs$ad, ptfs$zarc_orig,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF ZARC Original',
       sub = paste('RMSE:', round(rmse(ptfs$ad, ptfs$zarc_orig), 3),
-                  'R²:', round(cor(ptfs$ad, ptfs$zarc_orig)^2, 3)))
+                  'R²:', round(cor(ptfs$ad, ptfs$zarc_orig)^2, 3),
+                  'R:', round(cor(ptfs$ad, ptfs$zarc_orig), 3)))
 ```
 
 ## Qual a área do triang. que contém os dados?
@@ -260,7 +268,8 @@ plot(dados_extra$AD, dados_extra$zarc,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF ZARC (verificação independente)',
       sub = paste('RMSE:', round(rmse(dados_extra$AD, dados_extra$zarc), 3),
-                  'R²:', round(cor(dados_extra$AD, dados_extra$zarc)^2, 3)))
+                  'R²:', round(cor(dados_extra$AD, dados_extra$zarc)^2, 3),
+                  'R:', round(cor(dados_extra$AD, dados_extra$zarc), 3)))
 ```
 A comparação com outras PTFs exige que os dados utilizados sejam restringidos ao domínio das modelos. Dessa forma, o conjunto de dados para a verificação e comparação é reduzido.
 
@@ -291,7 +300,8 @@ plot(dados_extra_filtrado$AD, dados_extra_filtrado$zarc,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF ZARC (verificação independente)',
       sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$zarc), 3),
-                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc)^2, 3)))
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc)^2, 3),
+                  'R:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc), 3)))
 ```
 
 Para a PTF de Assad, os coeficientes de ajuste foram: RMSE = `r round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$assad), 3)` e r² = `r round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$assad)^2, 3)`.
@@ -303,7 +313,8 @@ plot(dados_extra_filtrado$AD, dados_extra_filtrado$assad,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF Assad (verificação independente)',
       sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$assad), 3),
-                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$assad)^2, 3)))
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$assad)^2, 3),
+                  'R:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$assad), 3)))
 ```
 Para a PTF de Giarola, os coeficientes de ajuste foram: RMSE = `r round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$giarola), 3)` e r² = `r round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$giarola)^2, 3)`.
 
@@ -314,7 +325,8 @@ plot(dados_extra_filtrado$AD, dados_extra_filtrado$giarola,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF Giarola (verificação independente)',
       sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$giarola), 3),
-                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$giarola)^2, 3)))
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$giarola)^2, 3),
+                  'R:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$giarola), 3)))
 ```
 
 Para a PTF de van den Berg, os coeficientes de ajuste foram: RMSE = `r round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg), 3)` e r² = `r round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg)^2, 3)`.
@@ -326,7 +338,8 @@ plot(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF van den Berg (verificação independente)',
       sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg), 3),
-                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg)^2, 3)))
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg)^2, 3),
+                  'R:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$van_den_berg), 3)))
 ```
 
 E para a relação originalmente utilizada no ZARC, com 3 tipos de solos, temos: RMSE = `r round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig), 3)` e r² = `r round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig)^2, 3)`.
@@ -338,5 +351,6 @@ plot(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig,
 abline(a = 0, b = 1, col = 'red')
 title(main = 'PTF Zarc Original (verificação independente)',
       sub = paste('RMSE:', round(rmse(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig), 3),
-                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig)^2, 3)))
+                  'R²:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig)^2, 3),
+                  'R:', round(cor(dados_extra_filtrado$AD, dados_extra_filtrado$zarc_orig), 3)))
 ```

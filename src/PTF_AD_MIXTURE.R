@@ -213,7 +213,7 @@ par(mfrow=c(1,1), mar = c(5,4,4,2))
 #### Transformação Box - Cox ####
 # Transformaçao dos dados (normalidade, homocedasticidade e aditividade) - BOX-COX
 # Determinação do fator lambda
-bc <- boxcox(AD ~ -1 + dados$AT + dados$SIL + dados$ARG +
+bc <- boxcox(AD ~ -1 + AT + SIL + ARG +
                   I(AT*SIL) + I(AT*ARG) + I(SIL*ARG) +
                   I(AT*SIL*ARG), data = dados, lambda=(2000:5000)/10000)
 (lambda <- bc$x[which(bc$y==max(bc$y))])
