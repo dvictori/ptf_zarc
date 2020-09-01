@@ -101,6 +101,27 @@ A correlação entre os dados observados e o modelado é: `r cor(dados$AD, fit.m
 
 A **diferença entre o RMSE do modelo completo e das iterações é mínima**. Ou seja, o bom ajuste obtido nas validações cruzadas permanece quando usamos os dados completos.
 
+## Comparando com a regra atual
+
+Como a PTF proposta se compara à regra atual do ZARC, com 3 tipos de solos?
+```{r}
+AD_zarc_3solos <- ptf_ZARC_orig(dados$AT, dados$ARG)
+
+plot(dados$AD, fit.m2_destrans,
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)',
+     pch = 20)
+points(dados$AD, AD_zarc_3solos, col = 'red',
+       pch = 20)
+abline(a = 0, b = 1, lty = 'dashed')
+title(main = 'PTF ZARC proposta e regra atual')
+legend('bottomright', legend = c('Proposta', 'Atual'),
+       col = c('black', 'red'), pch = 20)
+
+```
+
+
+
 ## Aplicando outras PTFs aos dados
 
 Importante ressaltar que comparação para a equação do ZARC é feita em cima dos resultados da validação cruzada. Além disso, as amostras foram selecionadas de acordo com as faixas de valores de areia, silte e argila utilizadas para o desenvolvimento das respectivas PTFs, a saber:
@@ -202,6 +223,24 @@ title(main = 'PTF ZARC Original',
                   'R²:', round(cor(ptfs$ad, ptfs$zarc_orig)^2, 3),
                   'R:', round(cor(ptfs$ad, ptfs$zarc_orig), 3)))
 ```
+
+E qual é a diferença entre a PTF Zarc proposta e a regra atual?
+
+Podemos ver que a regra atual não apresenta relação com os valores de AD observados presentes na base de dados trabalhada. Pela regra atual, muita das amotras com AD < 1,5 mm cm⁻¹ são classificadas como solo 3 (AD = 1,5). 
+
+```{r}
+plot(ptfs$ad, ptfs$zarc, ylim = c(0.5, 1.6),
+     xlab = 'AD obs (mm cm⁻¹)',
+     ylab = 'AD modelo (mm cm⁻¹)',
+     pch = 20)
+points(ptfs$ad, ptfs$zarc_orig, col = 'red',
+       pch = 20)
+abline(a = 0, b = 1, lty = 'dashed')
+title(main = 'PTF ZARC proposta e regra atual')
+legend('bottomright', legend = c('Proposta', 'Atual'),
+       col = c('black', 'red'), pch = 20)
+```
+
 
 ## Qual a área do triang. que contém os dados?
 
