@@ -120,6 +120,9 @@ dados_modelo <- read.csv2('resultados/Preditos_triangulo_AD_m2.csv')
 dados_modelo$grupo <- grupo_textural(dados_modelo$AT, dados_modelo$SIL, dados_modelo$ARG)
 dados_modelo$subgrupo <- subgrupo_textural(dados_modelo$AT, dados_modelo$SIL, dados_modelo$ARG)
 
+# convertendo unidade para mm/cm
+dados_modelo[4:6] <- dados_modelo[4:6] * 10
+
 ggplot(dados_modelo) +
   geom_density(aes(x = ADm2)) +
   labs(x = 'Água disponível calculada- ADcal - [mm cm⁻¹]', y = 'FDP Kernel') +

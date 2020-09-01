@@ -32,6 +32,7 @@ Os scripts estão organizados na seguinte estrutura de pastas e arquivos:
    * *grupo_subgrupo_textural.R* - funções para retornar o grupo / subgrupo textural do SiBCS de uma amostra
    * *sensibilidade_risco_ad.r* - Script para avaliar a sensibilidade do risco à AD e avaliar a divisão das novas classes de AD
    * *PTF_AD_MIXTURE.R* - Script para calibração da PTF, modelos M1 e M2. Incluí gráficos ternários e análise do modelo gerado
+   * *validacao_cruzada_m1_m2.R* - validação cruzada dos modelos m1 e m2
    * *validacao_cruzada_e_compara_PTFs.Rmd* - Notebook para fazer a validação cruzada e comparação do resultado do M2 com outras PTFs da literatura. Originalmente foi escrito na forma de um Notebook. Decidido manter nesse formato.
    
 ### Principais resultados

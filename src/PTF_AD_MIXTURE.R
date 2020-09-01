@@ -22,31 +22,28 @@ library(Ternary)
 # Usar o mesmo formato quando for salvar
 dados <- read.csv2("dados/bd_zarc.csv")
 
-# convertendo AD de cm3/cm3 para mm/cm
-dados$AD <- dados$AD * 10
-
 # Grafico da Função de Densidade de Probabilidade - FDP (Kernel)
 # dos dados de AD e demais preditores.
 # Apenas a título de exemplo. Graficos usados na publicação
 # estão no script estatistica_descritiva_bd_zarc.R
 
 plot(density(dados$AD),
-     main = '', xlab = 'Água disponível - AD - [mm cm⁻¹]', ylab = 'FDP Kernel')
+     main = '', xlab = 'Água disponível - AD - [cm³ cm⁻³]', ylab = 'FDP Kernel')
 abline(h = 0)
 
 # Plontando um grafico de densidade dos dados de AT - verificando a distribuição de dados de AT
-plot(density(dados$AT * 100),
+plot(density(dados$AT),
      main = '', xlab = 'Areia total - AT - [%] ', ylab = 'FDP Kernel')
 abline(h = 0)
 
 # Plontando um grafico de densidade dos dados de SIL - verificando a distribuição de dados de SIL
-plot(density(dados$SIL * 100),
+plot(density(dados$SIL),
      main = '', xlab = 'Silte - SIL - [%]', ylab = 'FDP kernel')
 abline(h = 0)
 
 # Plontando um grafico de densidade dos dados de ARG -verificando a distribuição de dados de ARG
-plot(density(dados$ARG * 100),
-     main = '', xlab = 'Argila - ARG - [%]', ylab = 'Distribuição')
+plot(density(dados$ARG),
+     main = '', xlab = 'Argila - ARG - [%]', ylab = 'FDP kernel')
 abline(h = 0)
 
 #### Plotando a base de dados no grafico ternario ####
@@ -76,7 +73,7 @@ TernaryPlot(main = 'Gráfico ternário dos dados de AD, base ZARC',
 AddToTernary(points, dados[c('ARG', 'SIL', 'AT')],
              cex = 0.5, pch = 19, col = cores)
 legend('topright',
-       title = 'mm cm⁻¹',
+       title = 'cm³ cm⁻³',
        legend = levels(quebras_amostra),
        cex=0.8, bty='n', pch=21, pt.cex=1.8,
        pt.bg = paleta(6))
@@ -107,7 +104,7 @@ classe_ad <- function(ad) {
 }
 
 # indice para depois extrair a cor do vetor de cores
-classe_dados <- classe_ad(dados$AD)
+classe_dados <- classe_ad(dados$AD * 10)
 
 TernaryPlot(main = 'Gráfico ternário dos dados de AD, base ZARC',
             alab = 'Argila - [%]', blab = 'Silte - [%]', clab = 'Areia Total - [%]')
@@ -129,54 +126,11 @@ par(orig.par)
 # Modelo poderia ser escrito como AD ~ -1 + AT*SIL*ARG
 # Escrevendo de forma explícita para facilitar interpretação
 
-## Validação cruzada com 20 subconjuntos
-# para avaliar o modelo
-grupo <- rep(1:20, length.out = nrow(dados))
+## Foi realizada validação cruzada do modelo
+# com 20 subconjuntos.
+# Resultados estão no script validacao_cruzada_m1_m2.R
 
-ajuste <- data.frame(rodada = numeric(),
-                     r2 = numeric(),
-                     r2_ad = numeric(),
-                     rmse = numeric())
-
-AD_valid_m1 <- rep(-99, nrow(dados))
-
-for (i in 1:20) {
-  valid <- dados[grupo == i,]
-  calib <- dados[grupo != i,]
-  
-  m1 <- lm(AD ~ -1 + AT + SIL + ARG +
-             I(AT*SIL) + I(AT*ARG) + I(SIL*ARG) + I(AT*SIL*ARG), data=calib)
-  
-  # armazena apenas dados preditos p/ o subgrupo
-  valid$AD_ptf <- predict(m1, newdata = valid)
-  
-  valid_lm <- lm(AD ~ AD_ptf, data = valid)
-  ajuste <- rbind(ajuste, 
-                  data.frame(rodada = i,
-                             r2 = summary(valid_lm)$r.squared,
-                             r2_ad = summary(valid_lm)$adj.r.squared,
-                             rmse = sqrt(mean((valid$AD - valid$AD_ptf)^2))
-                  )
-  )
-  
-  # salva dados do subgrupo para juntar com as outras iterações
-  AD_valid_m1[grupo == i] <- valid$AD_ptf
-  
-}
-
-# RMSE médio das 20 iterações da validação cruzada é 0.358 mm cm-1
-ajuste
-mean(ajuste$rmse)
-
-# RMSE calculado apenas para os dados independentes
-# 0.362 mm cm-1
-sqrt(mean((dados$AD - AD_valid_m1)^2))
-
-plot(dados$AD, AD_valid_m1,
-     xlab = 'AD observada (mm cm⁻¹)', ylab = 'AD estimada, M1 (mm cm⁻¹)')
-abline(a = 0, b = 1, col = 'red')
-
-# agora modelo com todos os dados
+# Gerando modelo com todos os dados
 
 m1 <- lm(AD ~ -1 + AT + SIL + ARG +
            I(AT*SIL) + I(AT*ARG) + I(SIL*ARG) + I(AT*SIL*ARG), data=dados)
@@ -222,55 +176,7 @@ bc <- boxcox(AD ~ -1 + AT + SIL + ARG +
 ADt <- (dados$AD ^ lambda-1) / lambda
 
 ## Validação cruzada para avaliar o modelo
-# Usando o mesmo lambda para cada iteração da validação cruzada
-
-grupo <- rep(1:20, length.out = nrow(dados))
-
-ajuste <- data.frame(rodada = numeric(),
-                     r2 = numeric(),
-                     r2_ad = numeric(),
-                     rmse = numeric())
-
-AD_valid_m2 <- rep(-99, nrow(dados))
-
-for (i in 1:20) {
-  valid <- dados[grupo == i,]
-  ADt_valid <- ADt[grupo == i]
-  calib <- dados[grupo != i,]
-  ADt_calib <- ADt[grupo != i]
-  
-  m2 <- lm(ADt_calib ~ -1 + AT + SIL + ARG +
-             I(AT*SIL) + I(AT*ARG) + I(SIL*ARG) + I(AT*SIL*ARG), data=calib)
-  
-  valid$AD_ptf_bc <- predict(m2, newdata = valid)
-  
-  # destransformando Box-Cox
-  valid$AD_ptf <- (lambda * valid$AD_ptf_bc + 1) ^(1 / lambda)
-  
-  valid_lm <- lm(AD ~ AD_ptf, data = valid)
-  ajuste <- rbind(ajuste, 
-                  data.frame(rodada = i,
-                             r2 = summary(valid_lm)$r.squared,
-                             r2_ad = summary(valid_lm)$adj.r.squared,
-                             rmse = sqrt(mean((valid$AD - valid$AD_ptf)^2))
-                  )
-  )
-  
-  AD_valid_m2[grupo == i] <- valid$AD_ptf
-  
-}
-
-# RMSE médio da validação é 0.362
-ajuste
-mean(ajuste$rmse)
-
-# RMSE calculado apenas para os dados independentes
-# 0.366 mm cm-1
-sqrt(mean((dados$AD - AD_valid_m2)^2))
-
-plot(dados$AD, AD_valid_m2,
-     xlab = 'AD observada (mm cm⁻¹)', ylab = 'AD estimada, M2 (mm cm⁻¹)')
-abline(a = 0, b = 1, col = 'red')
+# se encontra no script `validacao_cruzada_m1_m2.R`
 
 # Aplicando modelo a todos os dados
 
@@ -321,7 +227,7 @@ abline(a = 0, b = 1, col = 'black')
 
 # Medidos vs preditos m2
 plot(AD, fit.m2_destrans,
-     xlab = 'AD amostra (mm cm⁻¹)', ylab = 'AD modelo (mm cm⁻¹)',
+     xlab = 'AD amostra (cm³ cm⁻³)', ylab = 'AD modelo (cm³ cm⁻³)',
      main = 'AD a partir das frações granulométricas',
      sub = 'com transformação Box-Cox')
 abline(a = 0, b = 1, col = 'black')
@@ -415,12 +321,12 @@ abline(h = 0)
 par(mfrow=c(2,1), mar = c(2,2,2,2))
 plot(fit.m2_destrans, dados$AD - fit.m2_destrans,
      main = 'Dispersão dos resíduos vs AD predito',
-     xlab = 'Preditos (mm cm⁻¹)', ylab = 'Resíduos (mm cm⁻¹)')
+     xlab = 'Preditos (cm³ cm⁻³)', ylab = 'Resíduos (cm³ cm⁻³)')
 abline(h = 0)
 
 hist(dados$AD - fit.m2_destrans,
      main = 'Histograma dos resíduos',
-     xlab = 'Resíduo (mm cm⁻¹)',
+     xlab = 'Resíduo (cm³ cm⁻³)',
      ylab = 'Frequência')
 
 par(mfrow=c(1,1), mar = c(5,4,4,2))
@@ -491,8 +397,10 @@ TernaryPlot(main = 'Modelo m1',
 # Utiliza o modelo ajustado (m1) anteriormente para colocar as cores
 # funcao recebe valores ternários na escala de 0 a 1.
 # Por isso multiplica por 100
+# Além disso, M1 calcula AD em cm3/cm3.
+# Quero saída em mm / cm
 func_to_contour <- function (ARG, SIL, AT) {
-  predict(m1, newdata = data.frame(AT, SIL, ARG) * 100) 
+  predict(m1, newdata = data.frame(AT, SIL, ARG) * 100) * 10
 }
 
 # Valores em cada ponto
@@ -506,9 +414,9 @@ TernaryContour(func_to_contour, resolution = 30)
 # Legenda com min, mean, max
 legend('topright',
        title = 'mm cm⁻¹',
-       legend=c(round(min(dados$AD), 2),
-                round(mean(dados$AD), 2),
-                round(max(dados$AD), 2)),
+       legend=c(round(min(dados$AD * 10), 2),
+                round(mean(dados$AD * 10), 2),
+                round(max(dados$AD * 10), 2)),
        cex=0.8, bty='n', pch=21, pt.cex=1.8,
        pt.bg=c(viridisLite::viridis(256, alpha = 0.6)[1],
                viridisLite::viridis(256, alpha = 0.6)[128],
@@ -552,9 +460,10 @@ TernaryPlot(main = 'AD estimada',
 
 # funcao recebe valores ternários na escala de 0 a 1.
 # Por isso multiplica por 100
+# M2 estima AD em cm3/cm3. Queremos em mm/cm. Por isso multiplica por 10
 func_to_contour <- function (ARG, SIL, AT) {
   adt <- predict(m2, newdata = data.frame(AT, SIL, ARG) * 100)
-  (lambda*adt+1)^(1/lambda)
+  (lambda*adt+1)^(1/lambda) * 10
 }
 
 # Valores em cada ponto
@@ -568,9 +477,9 @@ TernaryContour(func_to_contour, resolution = 30)
 # Legenda com min, mean, max
 legend('topright',
        title = 'mm cm⁻¹',
-       legend=c(round(min(dados$AD), 2),
-                round(mean(dados$AD), 2),
-                round(max(dados$AD), 2)),
+       legend=c(round(min(dados$AD * 10), 2),
+                round(mean(dados$AD * 10), 2),
+                round(max(dados$AD * 10), 2)),
        cex=0.8, bty='n', pch=21, pt.cex=1.8,
        pt.bg=c(viridisLite::viridis(256, alpha = 0.6)[1],
                viridisLite::viridis(256, alpha = 0.6)[128],
@@ -629,10 +538,11 @@ TernaryPlot(main = 'Intervalo de confiânça da AD estimada (M2)',
 
 # funcao recebe valores ternários na escala de 0 a 1.
 # Por isso multiplica por 100
+# M2 calcula em cm3/cm3. Queremos em mm/cm
 contour_intervalo_confianca <- function (ARG, SIL, AT) {
   adt <- predict(m2, newdata = data.frame(AT, SIL, ARG) * 100,
                  interval = 'confidence')
-  ad <- (lambda*adt+1)^(1/lambda)
+  ad <- (lambda*adt+1)^(1/lambda) * 10
   intervalo <- ad[,3] - ad[,2]
   return(intervalo)
 }
@@ -648,9 +558,9 @@ TernaryContour(contour_intervalo_confianca, resolution = 30)
 # Legenda com min, mean, max
 legend('topright',
        title = 'mm cm⁻¹',
-       legend=c(round(min(triang_m2$LS_ICm2 - triang_m2$LI_ICm2), 2),
-                round(mean(triang_m2$LS_ICm2 - triang_m2$LI_ICm2), 2),
-                round(max(triang_m2$LS_ICm2 - triang_m2$LI_ICm2), 2)),
+       legend=c(round(min(triang_m2$LS_ICm2 - triang_m2$LI_ICm2) * 10, 2),
+                round(mean(triang_m2$LS_ICm2 - triang_m2$LI_ICm2) * 10, 2),
+                round(max(triang_m2$LS_ICm2 - triang_m2$LI_ICm2) * 10, 2)),
        cex=0.8, bty='n', pch=21, pt.cex=1.8,
        pt.bg=c(viridisLite::viridis(256, alpha = 0.6)[1],
                viridisLite::viridis(256, alpha = 0.6)[128],
