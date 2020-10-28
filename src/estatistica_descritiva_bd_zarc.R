@@ -74,7 +74,7 @@ ggplot(dados) +
             aes(x = subgrupo, y = mediana + 0.08, label = mediana)) +
   geom_text(data = resumo,
             aes(x = subgrupo, y = 2.6, label = paste0('(', obs, ')'))) +
-  labs(x = 'Subgrupo textural', y = 'AD [mm cm⁻¹]')
+  labs(x = 'Subgrupamento textural', y = 'AD [mm cm⁻¹]')
 ggsave('figs/boxplot_AD_subgrupo_textural.png')
 
 #### Triangulo com as amostras ####
@@ -143,6 +143,6 @@ ggplot(dados_modelo) +
             aes(x = subgrupo, y = mediana + 0.08, label = mediana)) +
   geom_text(data = resumo_modelo,
             aes(x = subgrupo, y = 3, label = paste0('(', obs, ')'))) +
-  labs(x = 'Subgrupo textural', y = 'ADcal [mm cm⁻¹]')
+  labs(x = 'Subgrupamento textural', y = 'ADcal [mm cm⁻¹]')
 
 ggsave('figs/boxplot_AD_subgrupo_textural_modelo2.png')

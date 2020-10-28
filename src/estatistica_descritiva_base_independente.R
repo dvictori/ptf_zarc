@@ -72,7 +72,7 @@ ggplot(dados) +
             aes(x = subgrupo, y = mediana + 0.08, label = mediana)) +
   geom_text(data = resumo,
             aes(x = subgrupo, y = 3.1, label = paste0('(', obs, ')'))) +
-  labs(x = 'Subgrupo textural', y = 'AD [mm cm⁻¹]')
+  labs(x = 'Subgrupopamento textural', y = 'AD [mm cm⁻¹]')
 ggsave('figs/boxplot_AD_subgrupo_textural_independente.png')
 
 #### Triangulo ####
