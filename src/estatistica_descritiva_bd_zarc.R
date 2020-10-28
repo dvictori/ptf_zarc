@@ -84,14 +84,14 @@ orig.par <- par(no.readonly = TRUE)
 
 # Selecionando uma paleta de cores aos valores de AD em 5 classes
 
-paleta <- colorRampPalette(c('red',  'green', 'blue'))
+paleta <- c('#d7191c','#fdae61','#ffffbf','#abdda4','#2b83ba')
 quebras_amostra <- cut(dados$AD,
                        breaks = seq(min(dados$AD),
                                     max(dados$AD),
                                     len = 6),
                        include.lowest = TRUE)
 
-cores <- paleta(6)[quebras_amostra]
+cores <- paleta[quebras_amostra]
 
 # reduzindo as margens do plot
 par(mar = c(1,1,2,1))
@@ -99,13 +99,13 @@ par(mar = c(1,1,2,1))
 TernaryPlot(main = 'Gráfico ternário dos dados de AD',
             alab = 'Argila - [%]', blab = 'Silte - [%]', clab = 'Areia Total - [%]')
 AddToTernary(points, dados[c('ARG', 'SIL', 'AT')],
-             cex = 0.5, pch = 19, col = cores)
+             cex = 0.6, pch = 21, bg = cores, col = 'grey35')
 
 legend('topright',
        title = 'AD [mm cm⁻¹]',
        legend = levels(quebras_amostra),
        cex=0.8, bty='n', pch=21, pt.cex=1.8,
-       pt.bg = paleta(6))
+       pt.bg = paleta, col = 'grey25')
 
 dev.copy(png, 'figs/amostras_ternario.png')
 dev.off()

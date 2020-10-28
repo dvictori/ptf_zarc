@@ -254,20 +254,20 @@ legend('bottomright', legend = c('Proposta', 'Atual'),
 O ajuste da PTF para a base de dados mais restrita não se mostrou tão bom quanto o obtido para a base completa. Provavelmente isso ocorreu porque a base mais restrita, apesar de apresentar uma menor variação granulométrica, apresenta grande amplitude de AD. Com isso, o modelo desenvolvido não foi capaz de captar os extremos.
 
 ```{r}
-paleta <- colorRampPalette(c('red',  'green', 'blue'))
+paleta <- c('#d7191c','#fdae61','#ffffbf','#abdda4','#2b83ba')
 quebras_amostra <- cut(dados$AD * 10,
                        breaks = seq(min(dados$AD) * 10,
                                     max(dados$AD) * 10,
                                     len = 6),
                        include.lowest = TRUE)
 
-cores <- paleta(6)[quebras_amostra]
+cores <- paleta[quebras_amostra]
 
 TernaryPlot(main = '',
             alab = 'Argila - [%]', blab = 'Silte - [%]', clab = 'Areia Total - [%]')
 
 AddToTernary(points, dados[c('ARG', 'SIL', 'AT')],
-             cex = 0.5, pch = 19, col = cores)
+             cex = 0.6, pch = 21, bg = cores, col = 'grey35')
 
 base_filtrada <- matrix(c(
   06, 42, 52,
@@ -283,8 +283,8 @@ TernaryPolygon(base_filtrada, border = 'black', lty = 'dashed', lwd = 2)
 legend('topright',
        title = 'AD [mm cm⁻¹]',
        legend = levels(quebras_amostra),
-       cex=0.8, bty='n', pch=21, pt.cex=1.8,
-       pt.bg = paleta(6))
+       cex=0.6, bty='n', pch=21, pt.cex=1.5,
+       pt.bg = paleta, col = 'grey35')
 
 # dev.copy(png, '../figs/amostras_ternario_restricoes_base.png')
 # dev.off()
