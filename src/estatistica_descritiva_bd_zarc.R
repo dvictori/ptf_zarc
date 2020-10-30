@@ -93,21 +93,25 @@ quebras_amostra <- cut(dados$AD,
 
 cores <- paleta[quebras_amostra]
 
+# salvar em alta resolução
+png('figs/amostras_ternario.png', width = 4,
+    height = 4, units = 'in', res = 300)
+
 # reduzindo as margens do plot
 par(mar = c(1,1,2,1))
 
-TernaryPlot(main = 'Gráfico ternário dos dados de AD',
+TernaryPlot(
             alab = 'Argila - [%]', blab = 'Silte - [%]', clab = 'Areia Total - [%]')
 AddToTernary(points, dados[c('ARG', 'SIL', 'AT')],
-             cex = 0.6, pch = 21, bg = cores, col = 'grey35')
+             cex = 0.5, pch = 21, bg = cores, col = 'grey35')
 
 legend('topright',
        title = 'AD [mm cm⁻¹]',
        legend = levels(quebras_amostra),
-       cex=0.8, bty='n', pch=21, pt.cex=1.8,
+       cex=0.6, bty='n', pch=21, pt.cex=1,
        pt.bg = paleta, col = 'grey25')
 
-dev.copy(png, 'figs/amostras_ternario.png')
+#dev.copy(png, 'figs/amostras_ternario.png')
 dev.off()
 
 # voltando configurações da área do gráfico
