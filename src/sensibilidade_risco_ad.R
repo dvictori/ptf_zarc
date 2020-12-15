@@ -263,6 +263,6 @@ ggplot(teste_ad_40) +
                      labels = paste('AD', teste_ad_40$classes)) +
   geom_label(aes(x = id , y = ad, label = ad),
              label.padding = unit(0.15, "lines")) +
-  labs(x = '', y = 'AD (mm cm⁻¹)', fill = '') +
+  labs(x = 'Classes de Água Disponível (AD)', y = 'AD (mm cm⁻¹)', fill = '') +
   theme(legend.position = 'NONE')
 ggsave('figs/ads_6_classes.png')
