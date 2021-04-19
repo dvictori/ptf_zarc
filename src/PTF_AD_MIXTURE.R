@@ -365,11 +365,13 @@ SIL <- grade[index,2]
 ARG <- grade[index,3]
 
 triang_m1 <- data.frame(AT, SIL, ARG)
-ad_triang_m1 <- predict(m1, triang_m1, interval="confidence")
+# multiplicação por 10 é para passar unidade p/ mm/cm
+ad_triang_m1 <- predict(m1, triang_m1, interval="confidence") * 10
 
-triang_m1$ADmedia <- ad_triang_m1[,1]
-triang_m1$LI_IC   <- ad_triang_m1[,2]
-triang_m1$LS_IC   <- ad_triang_m1[,3]
+triang_m1$ADm1_mm_cm <- ad_triang_m1[,1]
+triang_m1$ClasseAD_m1 <- classe_ad(triang_m1$ADm1)
+triang_m1$LI_ICm1  <- ad_triang_m1[,2]
+triang_m1$LS_ICm1  <- ad_triang_m1[,3]
 
 # salvando valores preditos pelo M1, juntamente com o intervalo de confiânça
 # arquivos estão no `working directory`
@@ -380,9 +382,11 @@ triang_m2 <- data.frame(AT, SIL, ARG)
 ad_triang_m2 <- predict(m2, triang_m2, interval="confidence")
 
 # destransformando Box-Cox
-ad_triang_m2 <- (lambda * ad_triang_m2 + 1)^(1 / lambda)
+# mult 10 é para passar unidade de cm/cm p/ mm/cm
+ad_triang_m2 <- (lambda * ad_triang_m2 + 1)^(1 / lambda) * 10
 
-triang_m2$ADm2 <- ad_triang_m2[,1]
+triang_m2$ADm2_mm_cm <- ad_triang_m2[,1]
+triang_m2$ClasseAD_m2 <- classe_ad(triang_m2$ADm2)
 triang_m2$LI_ICm2 <- ad_triang_m2[,2]
 triang_m2$LS_ICm2 <- ad_triang_m2[,3]
 
