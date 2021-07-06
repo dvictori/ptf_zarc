@@ -4,7 +4,7 @@ Nesse repositório estão os scripts R utilizados para gerar a função de pedot
 
 A descrição detalhada do trabalho pode ser encontrada na publicação:
 
-<citação do trabalho>
+> TEIXEIRA, W. G.; VICTORIA, D. de C.; BARROS, A. H. C.; LUMBRERAS, J. F.; ARAUJO FILHO, J. C. de; SILVA, F. A. M. da; LIMA, E. de P.; BUENO FILHO, J. S. de S.; MONTEIRO, J. E. B. de A. **Predição da água disponível no solo em função da granulometria para uso nas análises de risco no Zoneamento Agrícola de Risco Climático.** Boletim de pesquisa e desenvolvimento, 272. Rio de Janeiro: Embrapa Solos, 2021 http://ainfo.cnptia.embrapa.br/digital/bitstream/item/224270/1/CNPS-BPD-272-2021.epub
 
 Adicionalmente, estão incluídos os scripts para gerar as figuras encontradas na publicação citada acima.
 
